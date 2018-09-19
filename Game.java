@@ -3,26 +3,75 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.Comparator;
 
-
+// java game > stats.txt
+class MetaParams
+{
+	int mutationRate;
+	float averageDevation;
+	int numOfBattles;
+	int numOfMates;
+	MetaParams()
+	{
+		Random r = new Random();
+		mutationRate = r.nextInt();
+		averageDevation = (float)r.nextGaussian();
+		numOfBattles = r.nextInt(20);
+		numOfMates = r.nextInt(15);
+	}
+	void evolveMeta()
+	{
+		Random r = new Random();
+		mutationRate = r.nextInt();
+		averageDevation = (float)r.nextGaussian();
+		numOfBattles = r.nextInt(20);
+		numOfMates = r.nextInt(15);
+	}
+	void setParams(MetaParams mp)
+	{
+		this.mutationRate = mp.mutationRate;
+		this.averageDevation = mp.averageDevation;
+		this.numOfBattles = mp.numOfBattles;
+		this.numOfMates = mp.numOfMates;
+	}
+	int getRate()
+	{
+		return this.mutationRate;
+	}
+	float getDevation()
+	{
+		return this.averageDevation;
+	}
+	int getBattles()
+	{
+		return this.numOfBattles;
+	}
+	int getMates()
+	{
+		return this.numOfMates;
+	}
+}
 
 class Game
 {
-
 	static double[] evolveWeights() throws Exception
 	{
 		// Meta-Parameters.
 		TreeMap<Integer, Integer> fitness = new TreeMap<>();
-		float mutationRate;
+		int mutationRate;
 		float averageDevation = .06f;
 		int numOfBattles = 50;
-		int numOfMates = 0;
+		int mostFit = Integer.MIN_VALUE;
+		int mostFitIndex = -1;
+		// int numOfMates = 10;
 		int winningBonus = 100;
 		// Create a random initial population
 		boolean neuralWins = false; // Check if evolved weights beat the reflex agent.
 		Random r = new Random();
 		Matrix population = new Matrix(100, 291);
+		MetaParams[] params = new MetaParams[100];
 		for(int i = 0; i < 100; i++)
 		{
+			params[i] = new MetaParams();
 			double[] chromosome = population.row(i);
 			for(int j = 0; j < chromosome.length; j++)
 				chromosome[j] = 0.03 * r.nextGaussian();
@@ -32,16 +81,18 @@ class Game
 		//       Please write some code to evolve this population.
 		//       (For tournament selection, you will need to call Controller.doBattleNoGui(agent1, agent2).)
 		int iterations = 0;
-		while(!neuralWins || iterations < 1000)
+		while(!neuralWins || iterations < 500)
 		{
+			numOfBattles = params[r.nextInt(100)].getBattles();
 			// Promote Diversity
 			for(int i = 0; i < population.rows(); i++)
 			{
 				double[] chromosome = population.row(i);
-				mutationRate = r.nextInt(100);
+				MetaParams current = params[i];
+				mutationRate = current.getRate();
 				if(mutationRate >= 60) // Probability that Chromosome should be mutated.
 				{
-					chromosome[r.nextInt(population.cols())] += r.nextGaussian() * averageDevation;
+					chromosome[r.nextInt(population.cols())] += r.nextGaussian() * current.getDevation();
 				}
 			}
 			// Natural Selection
@@ -54,14 +105,14 @@ class Game
 				if(Controller.doBattleNoGui(new NeuralAgent(population.row(blue)), new NeuralAgent(population.row(red))) == 1)
 				{
 					// Choosing if winner lives or dies.
-					if(lives >= 40)
+					if(lives >= 30)
 						population.removeRow(red);
 					else
 						population.removeRow(blue);
 				}
-				else
+				else if(Controller.doBattleNoGui(new NeuralAgent(population.row(blue)), new NeuralAgent(population.row(red))) == -1)
 				{
-					if(lives >= 40)
+					if(lives >= 30)
 						population.removeRow(blue);
 					else
 						population.removeRow(red);
@@ -72,7 +123,7 @@ class Game
 			{
 				int parentIndex = r.nextInt(population.rows());
 				double[] parent = population.row(parentIndex);
-				int[] candidates = new int[5];
+				int[] candidates = new int[params[parentIndex].getMates()];
 				for(int i = 0; i < candidates.length; i++)
 				{
 					int candidateIndex = r.nextInt(population.rows());
@@ -92,8 +143,15 @@ class Game
 						similarParent = candidates[i];
 					}
 				}
+				if(similarParent == -1)
+					similarParent = r.nextInt(population.rows());
+				// System.out.println("Similar Parent: " + similarParent);
 				double[] daddy = population.row(similarParent);
+				// params[population.rows()] = new MetaParams();
+				// params[population.rows()].setParams(params[parentIndex]);
 				double[] child = population.newRow();//new double[parent.length];
+				params[population.rows()-1] = new MetaParams();
+				params[population.rows()-1].setParams(params[parentIndex]);
 				int crossOverPoint = r.nextInt(population.cols());
 				for(int i = 0; i < crossOverPoint; i++)
 				{
@@ -113,13 +171,14 @@ class Game
 					// Time stamp to win. bonus if winning.
 					long endTime = System.currentTimeMillis();
 					int difference = (int)(endTime - startTime);
+					// Possibly do 200 - difference if winning the game quicker or not.
 					fitness.put(i, difference + winningBonus); // 100 for winningBonus.
-					System.out.println("Time to win: " + difference);
+					// System.out.println("Time to win: " + difference);
+					// System.out.println("Iteration to win: " + iterations);
 					neuralWins = true;
-					// Controller.doBattle(new ReflexAgent(), new NeuralAgent(population.row(i)));
-					System.out.println("Evolution complete");
-					return population.row(i);
-					// return population.row(i);
+					//System.out.println(difference+winningBonus);
+					//System.out.println("Evolution complete");
+					//return population.row(i);
 				}
 				else
 				{
@@ -130,9 +189,9 @@ class Game
 					// Time stamp to lose. Delta time ms lose.
 				}
 			}
-			int mostFit = Integer.MIN_VALUE;
-			int mostFitIndex = -1;
-			for(int i = 0; i < population.rows(); i++)
+			//int mostFit = Integer.MIN_VALUE;
+			mostFitIndex = -1;
+			for(int i = 0; i < fitness.size(); i++)
 			{
 				int fitnessScale = fitness.get(i);
 				if(fitnessScale > mostFit)
@@ -141,14 +200,12 @@ class Game
 					mostFitIndex = i;
 				}
 			}
-			System.out.println("Most fit population: " + mostFit + " at index: " + mostFitIndex);
-			// System.out.println(fitness);
+			//System.out.println("Most fit population: " + mostFit + " at index: " + mostFitIndex + ", Iteration: " + iterations);
+			System.out.println(mostFit);
 			iterations++;
 		}
-
-
 		// Return an arbitrary member from the population
-		return population.row(20);
+		return population.row(0);
 	}
 	static int similar(double[] parent, double[] selectedParent)
 	{
@@ -160,11 +217,14 @@ class Game
 		}
 		return count;
 	}
-
 	public static void main(String[] args) throws Exception
 	{
 		double[] w = evolveWeights();
+		for(int i = 0; i < w.length; i++)
+		{
+			//System.out.println(w[i]);
+		}
+		//double[] winningWeights = new double[100]; // This will change with the weight I get from a winning population.
 		Controller.doBattle(new ReflexAgent(), new NeuralAgent(w));
 	}
-
 }
