@@ -1,8 +1,5 @@
-import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeMap;
-import java.util.Comparator;
-
 // java game > stats.txt
 class MetaParams
 {
@@ -57,11 +54,12 @@ class Game
 	{
 		// Meta-Parameters.
 		TreeMap<Integer, Integer> fitness = new TreeMap<>();
+		// TreeMap<Integer, Double[]> correct = new TreeMap<>();
 		int mutationRate;
-		float averageDevation = .06f;
+		// float averageDevation = .06f;
 		int numOfBattles = 50;
 		int mostFit = Integer.MIN_VALUE;
-		int mostFitIndex = -1;
+		// int mostFitIndex = -1;
 		// int numOfMates = 10;
 		int winningBonus = 100;
 		// Create a random initial population
@@ -145,11 +143,8 @@ class Game
 				}
 				if(similarParent == -1)
 					similarParent = r.nextInt(population.rows());
-				// System.out.println("Similar Parent: " + similarParent);
 				double[] daddy = population.row(similarParent);
-				// params[population.rows()] = new MetaParams();
-				// params[population.rows()].setParams(params[parentIndex]);
-				double[] child = population.newRow();//new double[parent.length];
+				double[] child = population.newRow();
 				params[population.rows()-1] = new MetaParams();
 				params[population.rows()-1].setParams(params[parentIndex]);
 				int crossOverPoint = r.nextInt(population.cols());
@@ -178,7 +173,7 @@ class Game
 					neuralWins = true;
 					//System.out.println(difference+winningBonus);
 					//System.out.println("Evolution complete");
-					//return population.row(i);
+					return population.row(i);
 				}
 				else
 				{
