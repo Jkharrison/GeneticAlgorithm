@@ -1,5 +1,6 @@
 import java.util.Random;
 import java.util.TreeMap;
+import java.io.*;
 // java game > stats.txt
 class MetaParams
 {
@@ -59,7 +60,7 @@ class Game
 		// float averageDevation = .06f;
 		int numOfBattles = 50;
 		int mostFit = Integer.MIN_VALUE;
-		// int mostFitIndex = -1;
+		int mostFitIndex = -1;
 		// int numOfMates = 10;
 		int winningBonus = 100;
 		// Create a random initial population
@@ -214,12 +215,34 @@ class Game
 	}
 	public static void main(String[] args) throws Exception
 	{
-		double[] w = evolveWeights();
-		for(int i = 0; i < w.length; i++)
-		{
-			//System.out.println(w[i]);
+		//double[] w = evolveWeights();
+		// for(int i = 0; i < w.length; i++)
+		// {
+		// 	//System.out.println(w[i]);
+		// }
+		double[] winningWeights = new double[291]; // This will change with the weight I get from a winning population.
+		int index = 0;
+		try
+		{	
+			File file = new File("weight.txt");
+			FileReader fileReader = new FileReader(file);
+			BufferedReader bufferedReader = new BufferedReader(fileReader);
+			String line;
+			while((line = bufferedReader.readLine()) != null)
+			{
+				winningWeights[index] = Double.parseDouble(line);
+				index++;
+			}
+			fileReader.close();
 		}
-		//double[] winningWeights = new double[100]; // This will change with the weight I get from a winning population.
-		Controller.doBattle(new ReflexAgent(), new NeuralAgent(w));
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+		for(int i = 0; i < winningWeights.length; i++)
+		{
+			System.out.println(winningWeights[i]);
+		}
+		Controller.doBattle(new ReflexAgent(), new NeuralAgent(winningWeights));
 	}
 }
